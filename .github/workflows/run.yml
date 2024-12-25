@@ -33,41 +33,28 @@ jobs:
         Write-Host "Extracted filename: $filename"
         echo "::set-output name=filename::$filename"
 
+    - name: Check extracted filename
+      run: |
+        echo "Extracted filename: ${{ steps.extract_filename.outputs.filename }}"
+
     - name: Download .sctx file
       run: |
         echo "Downloading file from URL: ${{ github.event.inputs.sctx-url }}"
         curl -L -o "${{ steps.extract_filename.outputs.filename }}.sctx" ${{ github.event.inputs.sctx-url }}
 
-    - name: List files in the current directory
+    - name: Convert .sctx to .png
       run: |
-        dir
+        ./SctxConverter.exe "${{ steps.extract_filename.outputs.filename }}.sctx" "${{ steps.extract_filename.outputs.filename }}.png"
 
-    - name: Run SctxConverter
-      run: |
-        echo "Running SctxConverter with: ${{ steps.extract_filename.outputs.filename }}.sctx"
-        .\SctxConverter.exe decode "${{ steps.extract_filename.outputs.filename }}.sctx" --texture-only
-      shell: cmd
-
-    - name: Verify PNG file existence
-      run: |
-        echo "Checking PNG file existence"
-        if (Test-Path "${{ steps.extract_filename.outputs.filename }}.png") {
-          Write-Host "PNG file exists!"
-        } else {
-          Write-Host "PNG file does NOT exist!"
-        }
-
-    - name: Upload PNG file
+    - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
-        name: decoded-png
-        path: |
-          ${{ steps.extract_filename.outputs.filename }}.png
+        name: converted-image
+        path: ${{ steps.extract_filename.outputs.filename }}.png
 
-    - name: Post PNG to Discord
+    - name: Post to Discord
       run: |
-        echo "Posting to Discord..."
-        curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
-          -H "Content-Type: multipart/form-data" \
-          -F "content=<@${{ github.event.inputs.discord-id }}>" \
-          -F "file=@${{ steps.extract_filename.outputs.filename }}.png"
+        curl -H "Content-Type: application/json" \
+             -X POST \
+             -d "{\"content\": \"<@${{ github.event.inputs.discord-id }}> Your converted image is ready.\", \"file\": \"${{ steps.extract_filename.outputs.filename }}.png\"}" \
+             ${{ secrets.DISCORD_WEBHOOK_URL }}
