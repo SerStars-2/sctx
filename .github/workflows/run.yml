@@ -42,6 +42,10 @@ jobs:
         .\SctxConverter.exe decode ${{ env.filename }}.sctx --texture-only
       shell: cmd
 
+    - name: List files in the current directory
+      run: |
+        dir
+
     - name: Upload PNG file
       uses: actions/upload-artifact@v3
       with:
