@@ -76,7 +76,7 @@ jobs:
           curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
             -H "Content-Type: multipart/form-data" \
             -F "content=<@${{ github.event.inputs.discord-id }}>" \
-            -F "file=@${{ steps.extract_filename.outputs.filename }}.png"
+            -F "file=@D:/a/sctx/sctx/${{ steps.extract_filename.outputs.filename }}.png"
         else
           echo "File not found: ${{ steps.extract_filename.outputs.filename }}.png"
           exit 1
