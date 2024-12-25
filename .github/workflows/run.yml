@@ -56,18 +56,6 @@ jobs:
           Write-Host "PNG file does NOT exist!"
         }
 
-    - name: Upload PNG file
-      uses: actions/upload-artifact@v3
-      with:
-        name: decoded-png
-        path: |
-          ${{ steps.extract_filename.outputs.filename }}.png
-
-    - name: List files in the directory
-      run: |
-        echo "Listing files in the directory"
-        ls
-
     - name: Post to Discord
       uses: tsickert/discord-webhook@v6.0.0
       with:
