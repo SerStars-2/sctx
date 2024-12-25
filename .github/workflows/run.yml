@@ -42,13 +42,8 @@ jobs:
         echo "Downloading file from URL: ${{ github.event.inputs.sctx-url }}"
         curl -L -o "${{ steps.extract_filename.outputs.filename }}.sctx" ${{ github.event.inputs.sctx-url }}
 
-    - name: List files in the current directory
+    - name: Convert .sctx to .png
       run: |
-        dir
-
-    - name: Run SctxConverter
-      run: |
-        echo "Running SctxConverter with: ${{ steps.extract_filename.outputs.filename }}.sctx"
         .\SctxConverter.exe decode "${{ steps.extract_filename.outputs.filename }}.sctx" --texture-only
       shell: cmd
 
@@ -68,25 +63,10 @@ jobs:
         path: |
           ${{ steps.extract_filename.outputs.filename }}.png
 
-    - name: Set output filename
-      id: set_output_filename
-      run: echo "::set-output name=filename::${{ steps.extract_filename.outputs.filename }}"
-
-  post-to-discord:
-    runs-on: ubuntu-latest
-    needs: decode-sctx
-
-    steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: decoded-png
-        path: ./artifact
-
     - name: Post PNG to Discord
       run: |
         echo "Posting to Discord..."
         curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
           -H "Content-Type: multipart/form-data" \
           -F "content=<@${{ github.event.inputs.discord-id }}>" \
-          -F "file=@./artifact/${{ needs.decode-sctx.outputs.filename }}.png"
+          -F "file=@${{ steps.extract_filename.outputs.filename }}.png"
