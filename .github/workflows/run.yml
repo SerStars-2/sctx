@@ -31,7 +31,7 @@ jobs:
         Write-Host "URL: $url"
         $filename = [System.IO.Path]::GetFileNameWithoutExtension($url)
         Write-Host "Extracted filename: $filename"
-        echo "filename=$filename" >> $GITHUB_ENV
+        echo "::set-output name=filename::$filename"
 
     - name: Download .sctx file
       run: |
