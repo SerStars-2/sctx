@@ -33,12 +33,18 @@ jobs:
         Write-Host "Extracted filename: $filename"
         echo "filename=$filename" >> $GITHUB_ENV
 
+    - name: Verify filename in environment
+      run: |
+        echo "filename in environment: ${{ env.filename }}"
+
     - name: Download .sctx file
       run: |
+        echo "Downloading file: ${{ github.event.inputs.sctx-url }}"
         curl -L -o ${{ env.filename }}.sctx ${{ github.event.inputs.sctx-url }}
-
+      
     - name: Run SctxConverter
       run: |
+        echo "Running SctxConverter with: ${{ env.filename }}.sctx"
         .\SctxConverter.exe decode ${{ env.filename }}.sctx --texture-only
       shell: cmd
 
@@ -46,16 +52,24 @@ jobs:
       run: |
         dir
 
+    - name: Verify file existence before uploading
+      run: |
+        if (Test-Path ${{ env.filename }}.sctx.png) {
+          echo "File exists: ${{ env.filename }}.sctx.png"
+        } else {
+          echo "File does NOT exist: ${{ env.filename }}.sctx.png"
+        }
+
     - name: Upload PNG file
       uses: actions/upload-artifact@v3
       with:
         name: decoded-png
         path: |
-          ${{ env.filename }}_texture.png
+          ${{ env.filename }}.sctx.png
 
     - name: Post PNG to Discord
       run: |
-        $filePath = "${{ env.filename }}_texture.png"
+        $filePath = "${{ env.filename }}.sctx.png"
         Write-Host "Posting to Discord with file: $filePath"
         $discordWebhookUrl = "${{ secrets.DISCORD_WEBHOOK_URL }}"
         $discordMessage = "<@${{ github.event.inputs.discord-id }}>"
