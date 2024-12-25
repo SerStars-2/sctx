@@ -62,3 +62,15 @@ jobs:
         webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
         filename: "${{ steps.extract_filename.outputs.filename }}.png"
         content: "<@${{ github.event.inputs.discord-id }}>"
+
+    - name: If Failed to Convert
+      uses: sarisia/actions-status-discord@v1.15.1
+      if: failure()
+      env:
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      with:
+        nodetail: true
+        nofail: false
+        content: |
+          <@${{ github.event.inputs.discord-id }}>
+          Failed to convert ${{ steps.extract_filename.outputs.filename }}.sctx to PNG
