@@ -72,7 +72,7 @@ jobs:
       shell: bash
       run: |
         echo "Posting to Discord..."
-        FILE_PATH="D:/a/sctx/sctx/${{ steps.extract_filename.outputs.filename }}.png"
+        FILE_PATH="${{ steps.extract_filename.outputs.filename }}.png"
         echo "File path: $FILE_PATH"
         if [ -f "$FILE_PATH" ]; then
           curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
