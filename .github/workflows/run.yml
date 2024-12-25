@@ -36,7 +36,7 @@ jobs:
     - name: Download .sctx file
       run: |
         echo "Downloading file from URL: ${{ github.event.inputs.sctx-url }}"
-        curl -L -o ${{ github.event.inputs.sctx-url | split-path -leaf }} ${{ github.event.inputs.sctx-url }}
+        curl -L -o "${{ steps.extract_filename.outputs.filename }}.sctx" ${{ github.event.inputs.sctx-url }}
 
     - name: List files in the current directory
       run: |
@@ -44,14 +44,14 @@ jobs:
 
     - name: Run SctxConverter
       run: |
-        echo "Running SctxConverter with: ${{ github.event.inputs.sctx-url }}"
-        .\SctxConverter.exe decode "${{ github.event.inputs.sctx-url }}" --texture-only
+        echo "Running SctxConverter with: ${{ steps.extract_filename.outputs.filename }}.sctx"
+        .\SctxConverter.exe decode "${{ steps.extract_filename.outputs.filename }}.sctx" --texture-only
       shell: cmd
 
     - name: Verify PNG file existence
       run: |
         echo "Checking PNG file existence"
-        if (Test-Path "${{ github.event.inputs.sctx-url | split-path -leaf }}.png") {
+        if (Test-Path "${{ steps.extract_filename.outputs.filename }}.png") {
           Write-Host "PNG file exists!"
         } else {
           Write-Host "PNG file does NOT exist!"
@@ -62,7 +62,7 @@ jobs:
       with:
         name: decoded-png
         path: |
-          ${{ github.event.inputs.sctx-url | split-path -leaf }}.png
+          ${{ steps.extract_filename.outputs.filename }}.png
 
     - name: Post PNG to Discord
       run: |
@@ -70,4 +70,4 @@ jobs:
         curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
           -H "Content-Type: multipart/form-data" \
           -F "content=<@${{ github.event.inputs.discord-id }}>" \
-          -F "file=@${{ github.event.inputs.sctx-url | split-path -leaf }}.png"
+          -F "file=@${{ steps.extract_filename.outputs.filename }}.png"
