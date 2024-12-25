@@ -25,40 +25,36 @@ jobs:
         curl -L -o SctxConverter.exe https://github.com/Daniil-SV/SCTX-Converter/releases/latest/download/SctxConverter.exe
 
     - name: Extract filename from URL (PowerShell)
+      id: extract_filename
       run: |
         $url = "${{ github.event.inputs.sctx-url }}"
         Write-Host "URL: $url"
         $filename = [System.IO.Path]::GetFileNameWithoutExtension($url)
         Write-Host "Extracted filename: $filename"
-        Write-Host "Setting FILENAME environment variable: $filename"
-        ::setenv "FILENAME" -value $filename
-
-    - name: Check if FILENAME is set
-      run: |
-        echo "Checking FILENAME environment variable: ${{ env.FILENAME }}"
+        echo "filename=$filename" >> $GITHUB_ENV
 
     - name: Download .sctx file
       run: |
         echo "Downloading file from URL: ${{ github.event.inputs.sctx-url }}"
-        curl -L -o ${{ env.FILENAME }}.sctx ${{ github.event.inputs.sctx-url }}
-      
+        curl -L -o ${{ github.event.inputs.sctx-url | split-path -leaf }} ${{ github.event.inputs.sctx-url }}
+
     - name: List files in the current directory
       run: |
         dir
 
     - name: Run SctxConverter
       run: |
-        echo "Running SctxConverter with: ${{ env.FILENAME }}.sctx"
-        .\SctxConverter.exe decode ${{ env.FILENAME }}.sctx --texture-only
+        echo "Running SctxConverter with: ${{ github.event.inputs.sctx-url }}"
+        .\SctxConverter.exe decode "${{ github.event.inputs.sctx-url }}" --texture-only
       shell: cmd
 
-    - name: Verify file existence before uploading
+    - name: Verify PNG file existence
       run: |
-        echo "Verifying the existence of the PNG file."
-        if (Test-Path ${{ env.FILENAME }}.sctx.png) {
-          echo "File exists: ${{ env.FILENAME }}.sctx.png"
+        echo "Checking PNG file existence"
+        if (Test-Path "${{ github.event.inputs.sctx-url | split-path -leaf }}.png") {
+          Write-Host "PNG file exists!"
         } else {
-          echo "File does NOT exist: ${{ env.FILENAME }}.sctx.png"
+          Write-Host "PNG file does NOT exist!"
         }
 
     - name: Upload PNG file
@@ -66,23 +62,12 @@ jobs:
       with:
         name: decoded-png
         path: |
-          ${{ env.FILENAME }}.sctx.png
+          ${{ github.event.inputs.sctx-url | split-path -leaf }}.png
 
     - name: Post PNG to Discord
       run: |
         echo "Posting to Discord..."
-        $filePath = "${{ env.FILENAME }}.sctx.png"
-        $discordWebhookUrl = "${{ secrets.DISCORD_WEBHOOK_URL }}"
-        $discordMessage = "<@${{ github.event.inputs.discord-id }}>"
-        
-        $headers = @{
-          "Content-Type" = "multipart/form-data"
-        }
-
-        $formFields = @{
-          content = $discordMessage
-          file    = Get-Item $filePath
-        }
-
-        $response = Invoke-RestMethod -Uri $discordWebhookUrl -Method Post -Headers $headers -Form $formFields
-        Write-Host "Response: $response"
+        curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+          -H "Content-Type: multipart/form-data" \
+          -F "content=<@${{ github.event.inputs.discord-id }}>" \
+          -F "file=@${{ github.event.inputs.sctx-url | split-path -leaf }}.png"
