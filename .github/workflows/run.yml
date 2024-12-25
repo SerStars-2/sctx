@@ -70,4 +70,4 @@ jobs:
         curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
           -H "Content-Type: multipart/form-data" \
           -F "content=<@${{ github.event.inputs.discord-id }}>" \
-          -F "file=@${{ steps.extract_filename.outputs.filename }}.png"
+          -F "file=@decoded-png.zip"
