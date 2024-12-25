@@ -33,6 +33,10 @@ jobs:
         Write-Host "Extracted filename: $filename"
         echo "::set-output name=filename::$filename"
 
+    - name: Check extracted filename
+      run: |
+        echo "Extracted filename: ${{ steps.extract_filename.outputs.filename }}"
+
     - name: Download .sctx file
       run: |
         echo "Downloading file from URL: ${{ github.event.inputs.sctx-url }}"
@@ -64,6 +68,10 @@ jobs:
         path: |
           ${{ steps.extract_filename.outputs.filename }}.png
 
+    - name: Set output filename
+      id: set_output_filename
+      run: echo "::set-output name=filename::${{ steps.extract_filename.outputs.filename }}"
+
   post-to-discord:
     runs-on: ubuntu-latest
     needs: decode-sctx
@@ -81,4 +89,4 @@ jobs:
         curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
           -H "Content-Type: multipart/form-data" \
           -F "content=<@${{ github.event.inputs.discord-id }}>" \
-          -F "file=@./artifact/${{ steps.extract_filename.outputs.filename }}.png"
+          -F "file=@./artifact/${{ needs.decode-sctx.outputs.filename }}.png"
