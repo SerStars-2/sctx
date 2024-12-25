@@ -64,6 +64,7 @@ jobs:
           ${{ steps.extract_filename.outputs.filename }}.png
 
     - name: Post PNG to Discord
+      shell: bash
       run: |
         echo "Posting to Discord..."
         curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
