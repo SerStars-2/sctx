@@ -24,13 +24,19 @@ jobs:
       run: |
         curl -L -o SctxConverter.exe https://github.com/Daniil-SV/SCTX-Converter/releases/latest/download/SctxConverter.exe
 
+    - name: Extract filename from URL
+      id: extract_filename
+      run: |
+        FILENAME=$(basename "${{ github.event.inputs.sctx-url }}" .sctx)
+        echo "filename=$FILENAME" >> $GITHUB_ENV
+
     - name: Download .sctx file
       run: |
-        curl -L -o input.sctx ${{ github.event.inputs.sctx-url }}
+        curl -L -o ${{ env.filename }}.sctx ${{ github.event.inputs.sctx-url }}
 
     - name: Run SctxConverter
       run: |
-        .\SctxConverter.exe decode input.sctx --texture-only
+        .\SctxConverter.exe decode ${{ env.filename }}.sctx --texture-only
       shell: cmd
 
     - name: Upload PNG file
@@ -38,11 +44,11 @@ jobs:
       with:
         name: decoded-png
         path: |
-          input_texture.png
+          ${{ env.filename }}.png
 
     - name: Post PNG to Discord
       run: |
-        curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
+        curl -X POST "https://discord.com/api/webhooks/${{ secrets.DISCORD_WEBHOOK_URL }}" \
           -H "Content-Type: multipart/form-data" \
           -F "content=<@${{ github.event.inputs.discord-id }}>" \
-          -F "file=@input_texture.png"
+          -F "file=@${{ env.filename }}.png"
