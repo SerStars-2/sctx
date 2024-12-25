@@ -28,7 +28,9 @@ jobs:
       id: extract_filename
       run: |
         $url = "${{ github.event.inputs.sctx-url }}"
+        Write-Host "URL: $url"
         $filename = [System.IO.Path]::GetFileNameWithoutExtension($url)
+        Write-Host "Extracted filename: $filename"
         echo "filename=$filename" >> $GITHUB_ENV
 
     - name: Download .sctx file
@@ -49,7 +51,21 @@ jobs:
 
     - name: Post PNG to Discord
       run: |
-        curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
-          -H "Content-Type: multipart/form-data" \
-          -F "content=<@${{ github.event.inputs.discord-id }}>" \
-          -F "file=@${{ env.filename }}_texture.png"
+        $filePath = "${{ env.filename }}_texture.png"
+        Write-Host "Posting to Discord with file: $filePath"
+        $discordWebhookUrl = "${{ secrets.DISCORD_WEBHOOK_URL }}"
+        $discordMessage = "<@${{ github.event.inputs.discord-id }}>"
+        
+        # Define headers and form data
+        $headers = @{
+          "Content-Type" = "multipart/form-data"
+        }
+
+        $formFields = @{
+          content = $discordMessage
+          file    = Get-Item $filePath
+        }
+
+        # Use Invoke-RestMethod to post the data to Discord
+        $response = Invoke-RestMethod -Uri $discordWebhookUrl -Method Post -Headers $headers -Form $formFields
+        Write-Host "Response: $response"
