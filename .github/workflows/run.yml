@@ -68,18 +68,9 @@ jobs:
         echo "Listing files in the directory"
         ls
 
-    - name: Post PNG to Discord
-      shell: bash
-      run: |
-        echo "Posting to Discord..."
-        FILE_PATH="${{ steps.extract_filename.outputs.filename }}.png"
-        echo "File path: $FILE_PATH"
-        if [ -f "$FILE_PATH" ]; then
-          curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
-            -H "Content-Type: multipart/form-data" \
-            -F "content=<@${{ github.event.inputs.discord-id }}>" \
-            -F "file=@$FILE_PATH"
-        else
-          echo "File not found: $FILE_PATH"
-          exit 1
-        fi
+    - name: Post to Discord
+      uses: tsickert/discord-webhook@v6.0.0
+      with:
+        webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+        filename: "${{ steps.extract_filename.outputs.filename }}.png"
+        content: "<@${{ github.event.inputs.discord-id }}>"
