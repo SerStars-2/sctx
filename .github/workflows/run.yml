@@ -1,0 +1,33 @@
+name: Run SCTX-Converter and Retrieve PNG
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - README
+
+jobs:
+  decode-sctx:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Download the SctxConverter.exe
+    - name: Download SCTX-Converter
+      run: |
+        curl -L -o SctxConverter.exe https://github.com/Daniil-SV/SCTX-Converter/releases/latest/download/SctxConverter.exe
+        tar -xf SctxConverter.zip
+    
+    # Run SctxConverter.exe with decode and --texture-only args
+    - name: Run SctxConverter
+      run: |
+        SctxConverter.exe decode input.sctx output.json --texture-only
+
+    - name: Upload PNG file
+      uses: actions/upload-artifact@v3
+      with:
+        name: decoded-png
+        path: |
+          output.png 
