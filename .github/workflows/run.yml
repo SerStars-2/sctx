@@ -72,12 +72,14 @@ jobs:
       shell: bash
       run: |
         echo "Posting to Discord..."
-        if [ -f "D:/a/sctx/sctx/${{ steps.extract_filename.outputs.filename }}.png" ]; then
+        FILE_PATH="D:/a/sctx/sctx/${{ steps.extract_filename.outputs.filename }}.png"
+        echo "File path: $FILE_PATH"
+        if [ -f "$FILE_PATH" ]; then
           curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
-            -H "Content-Type: application/json" \
+            -H "Content-Type: multipart/form-data" \
             -F "content=<@${{ github.event.inputs.discord-id }}>" \
-            -F "file=@D:/a/sctx/sctx/${{ steps.extract_filename.outputs.filename }}.png"
+            -F "file=@$FILE_PATH"
         else
-          echo "File not found: ${{ steps.extract_filename.outputs.filename }}.png"
+          echo "File not found: $FILE_PATH"
           exit 1
         fi
