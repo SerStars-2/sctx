@@ -72,9 +72,9 @@ jobs:
       shell: bash
       run: |
         echo "Posting to Discord..."
-        if [ -f "${{ steps.extract_filename.outputs.filename }}.png" ]; then
+        if [ -f "D:/a/sctx/sctx/${{ steps.extract_filename.outputs.filename }}.png" ]; then
           curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
-            -H "Content-Type: multipart/form-data" \
+            -H "Content-Type: application/json" \
             -F "content=<@${{ github.event.inputs.discord-id }}>" \
             -F "file=@D:/a/sctx/sctx/${{ steps.extract_filename.outputs.filename }}.png"
         else
