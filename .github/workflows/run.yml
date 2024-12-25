@@ -25,13 +25,13 @@ jobs:
         curl -L -o SctxConverter.exe https://github.com/Daniil-SV/SCTX-Converter/releases/latest/download/SctxConverter.exe
 
     - name: Extract filename from URL (PowerShell)
-      id: extract_filename
       run: |
         $url = "${{ github.event.inputs.sctx-url }}"
         Write-Host "URL: $url"
         $filename = [System.IO.Path]::GetFileNameWithoutExtension($url)
         Write-Host "Extracted filename: $filename"
-        echo "FILENAME=$filename" >> $GITHUB_ENV
+        Write-Host "Setting FILENAME environment variable: $filename"
+        ::setenv "FILENAME" -value $filename
 
     - name: Check if FILENAME is set
       run: |
