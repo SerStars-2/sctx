@@ -18,16 +18,16 @@ jobs:
     - name: Download SCTX-Converter
       run: |
         curl -L -o SctxConverter.exe https://github.com/Daniil-SV/SCTX-Converter/releases/latest/download/SctxConverter.exe
-        tar -xf SctxConverter.zip
-    
+
     # Run SctxConverter.exe with decode and --texture-only args
     - name: Run SctxConverter
       run: |
-        SctxConverter.exe decode input.sctx output.json --texture-only
+        SctxConverter.exe decode input.sctx --texture-only
 
+    # Upload the resulting PNG file as an artifact
     - name: Upload PNG file
       uses: actions/upload-artifact@v3
       with:
         name: decoded-png
         path: |
-          output.png 
+          input_texture.png  # Replace with the actual name of the output PNG file
