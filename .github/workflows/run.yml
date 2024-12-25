@@ -63,6 +63,11 @@ jobs:
         path: |
           ${{ steps.extract_filename.outputs.filename }}.png
 
+    - name: List files in the directory
+      run: |
+        echo "Listing files in the directory"
+        ls -l
+
     - name: Post PNG to Discord
       shell: bash
       run: |
