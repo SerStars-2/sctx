@@ -56,10 +56,10 @@ jobs:
           Write-Host "PNG file does NOT exist!"
         }
 
-    - name: Fail on Purpose
-      run: |
-        echo "Failing this job on purpose to test the failure notification"
-        exit 1
+    # - name: Fail on Purpose
+    #   run: |
+    #     echo "Failing this job on purpose to test the failure notification"
+    #     exit 1
 
     - name: Post to Discord
       uses: tsickert/discord-webhook@v6.0.0
