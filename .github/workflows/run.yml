@@ -76,6 +76,7 @@ jobs:
       with:
         nodetail: true
         nofail: false
+        description: |
+          Failed to convert ${{ steps.extract_filename.outputs.filename }}.sctx to PNG
         content: |
           <@${{ github.event.inputs.discord-id }}>
-          Failed to convert ${{ steps.extract_filename.outputs.filename }}.sctx to PNG
