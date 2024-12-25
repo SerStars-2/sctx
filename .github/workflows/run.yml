@@ -31,21 +31,21 @@ jobs:
         Write-Host "URL: $url"
         $filename = [System.IO.Path]::GetFileNameWithoutExtension($url)
         Write-Host "Extracted filename: $filename"
-        echo "filename=$filename" >> $GITHUB_ENV
+        echo "FILENAME=$filename" >> $GITHUB_ENV
 
     - name: Verify filename in environment
       run: |
-        echo "filename in environment: ${{ env.filename }}"
+        echo "filename in environment: ${{ env.FILENAME }}"
 
     - name: Download .sctx file
       run: |
         echo "Downloading file: ${{ github.event.inputs.sctx-url }}"
-        curl -L -o ${{ env.filename }}.sctx ${{ github.event.inputs.sctx-url }}
+        curl -L -o ${{ env.FILENAME }}.sctx ${{ github.event.inputs.sctx-url }}
       
     - name: Run SctxConverter
       run: |
-        echo "Running SctxConverter with: ${{ env.filename }}.sctx"
-        .\SctxConverter.exe decode ${{ env.filename }}.sctx --texture-only
+        echo "Running SctxConverter with: ${{ env.FILENAME }}.sctx"
+        .\SctxConverter.exe decode ${{ env.FILENAME }}.sctx --texture-only
       shell: cmd
 
     - name: List files in the current directory
@@ -54,10 +54,10 @@ jobs:
 
     - name: Verify file existence before uploading
       run: |
-        if (Test-Path ${{ env.filename }}.sctx.png) {
-          echo "File exists: ${{ env.filename }}.sctx.png"
+        if (Test-Path ${{ env.FILENAME }}.sctx.png) {
+          echo "File exists: ${{ env.FILENAME }}.sctx.png"
         } else {
-          echo "File does NOT exist: ${{ env.filename }}.sctx.png"
+          echo "File does NOT exist: ${{ env.FILENAME }}.sctx.png"
         }
 
     - name: Upload PNG file
@@ -65,11 +65,11 @@ jobs:
       with:
         name: decoded-png
         path: |
-          ${{ env.filename }}.sctx.png
+          ${{ env.FILENAME }}.sctx.png
 
     - name: Post PNG to Discord
       run: |
-        $filePath = "${{ env.filename }}.sctx.png"
+        $filePath = "${{ env.FILENAME }}.sctx.png"
         Write-Host "Posting to Discord with file: $filePath"
         $discordWebhookUrl = "${{ secrets.DISCORD_WEBHOOK_URL }}"
         $discordMessage = "<@${{ github.event.inputs.discord-id }}>"
