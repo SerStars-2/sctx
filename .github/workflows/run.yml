@@ -50,5 +50,6 @@ jobs:
     - name: Post PNG to Discord
       run: |
         curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+          -H "Content-Type: multipart/form-data" \
           -F "content=<@${{ github.event.inputs.discord-id }}>" \
           -F "file=@${{ env.filename }}_texture.png"
