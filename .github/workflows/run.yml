@@ -33,27 +33,28 @@ jobs:
         Write-Host "Extracted filename: $filename"
         echo "FILENAME=$filename" >> $GITHUB_ENV
 
-    - name: Verify filename in environment
+    - name: Check if FILENAME is set
       run: |
-        echo "filename in environment: ${{ env.FILENAME }}"
+        echo "Checking FILENAME environment variable: ${{ env.FILENAME }}"
 
     - name: Download .sctx file
       run: |
-        echo "Downloading file: ${{ github.event.inputs.sctx-url }}"
+        echo "Downloading file from URL: ${{ github.event.inputs.sctx-url }}"
         curl -L -o ${{ env.FILENAME }}.sctx ${{ github.event.inputs.sctx-url }}
       
+    - name: List files in the current directory
+      run: |
+        dir
+
     - name: Run SctxConverter
       run: |
         echo "Running SctxConverter with: ${{ env.FILENAME }}.sctx"
         .\SctxConverter.exe decode ${{ env.FILENAME }}.sctx --texture-only
       shell: cmd
 
-    - name: List files in the current directory
-      run: |
-        dir
-
     - name: Verify file existence before uploading
       run: |
+        echo "Verifying the existence of the PNG file."
         if (Test-Path ${{ env.FILENAME }}.sctx.png) {
           echo "File exists: ${{ env.FILENAME }}.sctx.png"
         } else {
@@ -69,12 +70,11 @@ jobs:
 
     - name: Post PNG to Discord
       run: |
+        echo "Posting to Discord..."
         $filePath = "${{ env.FILENAME }}.sctx.png"
-        Write-Host "Posting to Discord with file: $filePath"
         $discordWebhookUrl = "${{ secrets.DISCORD_WEBHOOK_URL }}"
         $discordMessage = "<@${{ github.event.inputs.discord-id }}>"
         
-        # Define headers and form data
         $headers = @{
           "Content-Type" = "multipart/form-data"
         }
@@ -84,6 +84,5 @@ jobs:
           file    = Get-Item $filePath
         }
 
-        # Use Invoke-RestMethod to post the data to Discord
         $response = Invoke-RestMethod -Uri $discordWebhookUrl -Method Post -Headers $headers -Form $formFields
         Write-Host "Response: $response"
