@@ -68,6 +68,6 @@ jobs:
       run: |
         echo "Posting to Discord..."
         curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
-          -H "Content-Type: multipart/form-data" \
+          -H "Content-Type: application/json" \
           -F "content=<@${{ github.event.inputs.discord-id }}>" \
           -F "file=@decoded-png.zip"
