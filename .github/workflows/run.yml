@@ -23,27 +23,27 @@ jobs:
       run: |
         curl -L -o SctxConverter.exe https://github.com/Daniil-SV/SCTX-Converter/releases/latest/download/SctxConverter.exe
 
-    - name: Extract filename from URL (PowerShell)
+    - name: Extract filename from URL
       id: extract_filename
       run: |
-        $url = "@${{ github.event.inputs.sctx-url }}@"
+        $url = "${{ github.event.inputs.sctx-url }}"
         Write-Host "🔗 Full URL received: $url"
 
         # Extract filename without query parameters
-        $filename = [System.IO.Path]::GetFileNameWithoutExtension(($url -split '\?')[0])
+        $clean_url = $url -split '\?' | Select-Object -First 1
+        $filename = [System.IO.Path]::GetFileNameWithoutExtension($clean_url)
         Write-Host "📄 Extracted filename: $filename"
 
         echo "filename=$filename" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     - name: Download .sctx file
       run: |
-        $url = "@${{ github.event.inputs.sctx-url }}@"
+        $url = "${{ github.event.inputs.sctx-url }}"
         $output = "${{ env.filename }}.sctx"
 
         Write-Host "⬇️ Downloading file from: $url"
         
-        # Properly handle URL in PowerShell
-        Invoke-WebRequest -Uri $url -OutFile $output
+        Invoke-WebRequest -Uri "$url" -OutFile "$output"
 
     - name: Convert .sctx to .png
       run: |
@@ -52,7 +52,6 @@ jobs:
 
     - name: Verify PNG file existence
       run: |
-        echo "Checking if PNG file exists..."
         if (Test-Path "${{ env.filename }}.png") {
           Write-Host "✅ PNG file exists!"
         } else {
