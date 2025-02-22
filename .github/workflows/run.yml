@@ -28,46 +28,43 @@ jobs:
       id: extract_filename
       run: |
         $url = "${{ github.event.inputs.sctx-url }}"
-        Write-Host "URL: $url"
-        $filename = [System.IO.Path]::GetFileNameWithoutExtension($url)
+        Write-Host "Full URL: $url"
+        
+        # Extract filename without query parameters
+        $filename = [System.IO.Path]::GetFileNameWithoutExtension(($url -split '\?')[0])
         Write-Host "Extracted filename: $filename"
-        echo "::set-output name=filename::$filename"
 
-    - name: Check extracted filename
-      run: |
-        echo "Extracted filename: ${{ steps.extract_filename.outputs.filename }}"
+        echo "filename=$filename" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     - name: Download .sctx file
       run: |
         $url = "${{ github.event.inputs.sctx-url }}"
-        Write-Host "Downloading file from URL: $url"
-        curl -L -o "${{ steps.extract_filename.outputs.filename }}.sctx" "`"$url`""
-
+        $output = "${{ env.filename }}.sctx"
+        Write-Host "Downloading from: $url"
+        
+        # Download using Invoke-WebRequest to avoid PowerShell's '&' issue
+        Invoke-WebRequest -Uri $url -OutFile $output
 
     - name: Convert .sctx to .png
       run: |
-        .\SctxConverter.exe decode "${{ steps.extract_filename.outputs.filename }}.sctx" --texture-only
+        .\SctxConverter.exe decode "${{ env.filename }}.sctx" --texture-only
       shell: cmd
 
     - name: Verify PNG file existence
       run: |
-        echo "Checking PNG file existence"
-        if (Test-Path "${{ steps.extract_filename.outputs.filename }}.png") {
-          Write-Host "PNG file exists!"
+        echo "Checking if PNG file exists..."
+        if (Test-Path "${{ env.filename }}.png") {
+          Write-Host "✅ PNG file exists!"
         } else {
-          Write-Host "PNG file does NOT exist!"
+          Write-Host "❌ PNG file NOT found!"
+          exit 1
         }
 
-    # - name: Fail on Purpose
-    #   run: |
-    #     echo "Failing this job on purpose to test the failure notification"
-    #     exit 1
-
-    - name: Post to Discord
+    - name: Post PNG to Discord
       uses: tsickert/discord-webhook@v6.0.0
       with:
         webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-        filename: "${{ steps.extract_filename.outputs.filename }}.png"
+        file: "${{ env.filename }}.png"
         content: "<@${{ github.event.inputs.discord-id }}>"
 
     - name: If Failed to Convert
@@ -78,7 +75,5 @@ jobs:
       with:
         nodetail: true
         nofail: false
-        title: |
-          Failed to convert ${{ steps.extract_filename.outputs.filename }}.sctx to PNG
-        content: |
-          <@${{ github.event.inputs.discord-id }}>
+        title: "Failed to convert `${{ env.filename }}.sctx` to PNG"
+        content: "<@${{ github.event.inputs.discord-id }}>"
