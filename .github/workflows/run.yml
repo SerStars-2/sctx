@@ -37,19 +37,12 @@ jobs:
       run: |
         echo "Extracted filename: ${{ steps.extract_filename.outputs.filename }}"
 
-    - name: Decode URL (PowerShell)
-      id: decode_url
-      run: |
-        $encodedUrl = "${{ github.event.inputs.sctx-url }}"
-        $decodedUrl = [System.Web.HttpUtility]::UrlDecode($encodedUrl)
-        echo "Decoded URL: $decodedUrl"
-        echo "::set-output name=decoded_url::$decodedUrl"
-
     - name: Download .sctx file
       run: |
-        echo "Downloading file from URL: ${{ steps.decode_url.outputs.decoded_url }}"
-        curl -L -o "${{ steps.extract_filename.outputs.filename }}.sctx" "${{ steps.decode_url.outputs.decoded_url }}"
-
+        $url = "${{ github.event.inputs.sctx-url }}"
+        $output = "${{ steps.extract_filename.outputs.filename }}.sctx"
+        Write-Host "Downloading file from URL: $url"
+        Invoke-WebRequest -Uri $url -OutFile $output
 
     - name: Convert .sctx to .png
       run: |
