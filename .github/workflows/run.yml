@@ -40,9 +40,9 @@ jobs:
     - name: Download .sctx file
       run: |
         $url = "${{ github.event.inputs.sctx-url }}"
-        $output = "${{ steps.extract_filename.outputs.filename }}.sctx"
         Write-Host "Downloading file from URL: $url"
-        Invoke-WebRequest -Uri $url -OutFile $output
+        curl -L -o "${{ steps.extract_filename.outputs.filename }}.sctx" "`"$url`""
+
 
     - name: Convert .sctx to .png
       run: |
