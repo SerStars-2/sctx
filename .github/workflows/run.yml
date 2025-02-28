@@ -20,9 +20,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Download SCTX-Converter
-      run: |
-        curl -L -o SctxConverter.exe https://github.com/Daniil-SV/SCTX-Converter/releases/latest/download/SctxConverter.exe
+    # - name: Download SCTX-Converter
+    #   run: |
+    #     curl -L -o SctxConverter.exe https://github.com/Daniil-SV/SCTX-Converter/releases/latest/download/SctxConverter.exe
 
     - name: Extract filename from URL (PowerShell)
       id: extract_filename
