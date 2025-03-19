@@ -75,7 +75,7 @@ jobs:
       with:
         webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
         filename: "${{ steps.extract_filename.outputs.basename }}.png"
-        content: "<@${{ github.event.inputs.discord-id }}> Here's your converted PNG!"
+        content: "<@${{ github.event.inputs.discord-id }}>"
 
     - name: If Failed to Convert
       if: failure()
@@ -87,7 +87,5 @@ jobs:
         nofail: false
         title: |
           Failed to convert ${{ steps.extract_filename.outputs.filename }}
-        description: |
-          The conversion process failed. Please make sure the file is a valid SCTX file.
         content: |
           <@${{ github.event.inputs.discord-id }}>
