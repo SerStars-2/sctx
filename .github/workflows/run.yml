@@ -20,63 +20,74 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # - name: Download SCTX-Converter
-    #   run: |
-    #     curl -L -o SctxConverter.exe https://github.com/Daniil-SV/SCTX-Converter/releases/latest/download/SctxConverter.exe
+  # - name: Fail on Purpose
+  #   run: |
+  #     echo "Failing this job on purpose to test the failure notification"
+  #     exit 1
+
+  # - name: Download SCTX-Converter
+  #   run: |
+  #     curl -L -o SctxConverter.exe https://github.com/Daniil-SV/SCTX-Converter/releases/latest/download/SctxConverter.exe
 
     - name: Extract filename from URL (PowerShell)
       id: extract_filename
       run: |
         $url = "${{ github.event.inputs.sctx-url }}"
         Write-Host "URL: $url"
-        $filename = [System.IO.Path]::GetFileNameWithoutExtension($url)
+        $filename = $url -split '\?' | Select-Object -First 1
+        $filename = Split-Path $filename -Leaf
+        $basename = [System.IO.Path]::GetFileNameWithoutExtension($filename)
         Write-Host "Extracted filename: $filename"
-        echo "::set-output name=filename::$filename"
-
-    - name: Check extracted filename
-      run: |
-        echo "Extracted filename: ${{ steps.extract_filename.outputs.filename }}"
+        Write-Host "Base name: $basename"
+        echo "filename=$filename" >> $env:GITHUB_OUTPUT
+        echo "basename=$basename" >> $env:GITHUB_OUTPUT
 
     - name: Download .sctx file
       run: |
         echo "Downloading file from URL: ${{ github.event.inputs.sctx-url }}"
-        curl -L -o "${{ steps.extract_filename.outputs.filename }}.sctx" ${{ github.event.inputs.sctx-url }}
+        Invoke-WebRequest -Uri "${{ github.event.inputs.sctx-url }}" -OutFile "${{ steps.extract_filename.outputs.filename }}"
+        if (!(Test-Path "${{ steps.extract_filename.outputs.filename }}")) {
+          Write-Error "Failed to download SCTX file"
+          exit 1
+        }
 
     - name: Convert .sctx to .png
       run: |
-        .\SctxConverter.exe decode "${{ steps.extract_filename.outputs.filename }}.sctx" --texture-only
+        .\SctxConverter.exe decode "${{ steps.extract_filename.outputs.filename }}" --texture-only
       shell: cmd
 
     - name: Verify PNG file existence
+      id: verify_png
       run: |
-        echo "Checking PNG file existence"
-        if (Test-Path "${{ steps.extract_filename.outputs.filename }}.png") {
-          Write-Host "PNG file exists!"
+        $pngPath = "${{ steps.extract_filename.outputs.basename }}.png"
+        if (Test-Path $pngPath) {
+          Write-Host "PNG file exists at: $pngPath"
+          echo "png_exists=true" >> $env:GITHUB_OUTPUT
         } else {
-          Write-Host "PNG file does NOT exist!"
+          Write-Error "PNG file was not created at: $pngPath"
+          echo "png_exists=false" >> $env:GITHUB_OUTPUT
+          exit 1
         }
 
-    # - name: Fail on Purpose
-    #   run: |
-    #     echo "Failing this job on purpose to test the failure notification"
-    #     exit 1
-
     - name: Post to Discord
+      if: steps.verify_png.outputs.png_exists == 'true'
       uses: tsickert/discord-webhook@v6.0.0
       with:
         webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-        filename: "${{ steps.extract_filename.outputs.filename }}.png"
-        content: "<@${{ github.event.inputs.discord-id }}>"
+        filename: "${{ steps.extract_filename.outputs.basename }}.png"
+        content: "<@${{ github.event.inputs.discord-id }}> Here's your converted PNG!"
 
     - name: If Failed to Convert
-      uses: sarisia/actions-status-discord@v1.15.1
       if: failure()
+      uses: sarisia/actions-status-discord@v1.15.1
       env:
         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       with:
         nodetail: true
         nofail: false
         title: |
-          Failed to convert ${{ steps.extract_filename.outputs.filename }}.sctx to PNG
+          Failed to convert ${{ steps.extract_filename.outputs.filename }}
+        description: |
+          The conversion process failed. Please make sure the file is a valid SCTX file.
         content: |
           <@${{ github.event.inputs.discord-id }}>
