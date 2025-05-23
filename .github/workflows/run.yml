@@ -13,11 +13,11 @@ on:
         type: number
       discord-channel-id:
         description: 'Discord channel ID'
-        required: false
+        required: true
         type: number
       discord-message-id:
         description: 'Discord message ID'
-        required: false
+        required: true
         type: number
 
 jobs:
@@ -77,23 +77,86 @@ jobs:
           exit 1
         }
 
+    # - name: Post to Discord
+    #   if: steps.verify_png.outputs.png_exists == 'true'
+    #   uses: tsickert/discord-webhook@v6.0.0
+    #   with:
+    #     webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+    #     filename: "${{ steps.extract_filename.outputs.basename }}.png"
+    #     content: "<@${{ github.event.inputs.discord-user-id }}>"
+
     - name: Post to Discord
       if: steps.verify_png.outputs.png_exists == 'true'
-      uses: tsickert/discord-webhook@v6.0.0
-      with:
-        webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-        filename: "${{ steps.extract_filename.outputs.basename }}.png"
-        content: "<@${{ github.event.inputs.discord-user-id }}>"
+      env:
+        DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        CHANNEL_ID: ${{ github.event.inputs.discord-channel-id }}
+        MESSAGE_ID: ${{ github.event.inputs.discord-message-id }}
+        USER_ID: ${{ github.event.inputs.discord-user-id }}
+        FILE: "${{ steps.extract_filename.outputs.basename }}.png"
+      run: |
+        $headers = @{
+          "Authorization" = "Bot $env:DISCORD_BOT_TOKEN"
+          "Content-Type"  = "multipart/form-data"
+        }
+
+        $contentJson = @{
+          content = "<@$env:USER_ID>"
+          message_reference = @{
+            message_id = "$env:MESSAGE_ID"
+            channel_id = "$env:CHANNEL_ID"
+            fail_if_not_exists = $false
+          }
+        } | ConvertTo-Json -Depth 3
+
+        $form = @{
+          "payload_json" = $contentJson
+          "file" = Get-Item -Path $env:FILE
+        }
+
+        Invoke-RestMethod -Uri "https://discord.com/api/v10/channels/$env:CHANNEL_ID/messages" `
+                          -Method Post `
+                          -Headers $headers `
+                          -Form $form
+      shell: pwsh
+
+    # - name: If Failed to Convert
+    #   if: failure()
+    #   uses: sarisia/actions-status-discord@v1.15.1
+    #   env:
+    #     DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+    #   with:
+    #     nodetail: true
+    #     nofail: false
+    #     title: |
+    #       Failed to convert ${{ steps.extract_filename.outputs.filename }}
+    #     content: |
+    #       <@${{ github.event.inputs.discord-user-id }}>
 
     - name: If Failed to Convert
       if: failure()
-      uses: sarisia/actions-status-discord@v1.15.1
       env:
-        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      with:
-        nodetail: true
-        nofail: false
-        title: |
-          Failed to convert ${{ steps.extract_filename.outputs.filename }}
-        content: |
-          <@${{ github.event.inputs.discord-user-id }}>
+        DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        CHANNEL_ID: ${{ github.event.inputs.discord-channel-id }}
+        MESSAGE_ID: ${{ github.event.inputs.discord-message-id }}
+        USER_ID: ${{ github.event.inputs.discord-user-id }}
+        FILENAME: ${{ steps.extract_filename.outputs.filename }}
+      run: |
+        $headers = @{
+          "Authorization" = "Bot $env:DISCORD_BOT_TOKEN"
+          "Content-Type"  = "application/json"
+        }
+
+        $body = @{
+          content = "<@$env:USER_ID> ❌ Failed to convert **$env:FILENAME** to PNG."
+          message_reference = @{
+            message_id = "$env:MESSAGE_ID"
+            channel_id = "$env:CHANNEL_ID"
+            fail_if_not_exists = $false
+          }
+        } | ConvertTo-Json -Depth 3
+
+        Invoke-RestMethod -Uri "https://discord.com/api/v10/channels/$env:CHANNEL_ID/messages" `
+                          -Method Post `
+                          -Headers $headers `
+                          -Body $body
+      shell: pwsh
