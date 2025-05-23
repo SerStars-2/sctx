@@ -7,9 +7,17 @@ on:
         description: 'URL of the .sctx file'
         required: true
         default: ''
-      discord-id:
+      discord-user-id:
         description: 'Discord user ID to mention'
         required: true
+        type: number
+      discord-channel-id:
+        description: 'Discord channel ID'
+        required: false
+        type: number
+      discord-message-id:
+        description: 'Discord message ID'
+        required: false
         type: number
 
 jobs:
@@ -75,7 +83,7 @@ jobs:
       with:
         webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
         filename: "${{ steps.extract_filename.outputs.basename }}.png"
-        content: "<@${{ github.event.inputs.discord-id }}>"
+        content: "<@${{ github.event.inputs.discord-user-id }}>"
 
     - name: If Failed to Convert
       if: failure()
@@ -88,4 +96,4 @@ jobs:
         title: |
           Failed to convert ${{ steps.extract_filename.outputs.filename }}
         content: |
-          <@${{ github.event.inputs.discord-id }}>
+          <@${{ github.event.inputs.discord-user-id }}>
