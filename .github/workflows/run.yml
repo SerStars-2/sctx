@@ -145,7 +145,7 @@ jobs:
         $headers = @{
           "Authorization" = "Bot $env:DISCORD_BOT_TOKEN"
           "Content-Type"  = "application/json"
-          "User-Agent"    = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+          "User-Agent"    = "DiscordBot (https://github.com/serstars-2/sctx, v1.0)"
         }
 
         $body = @{
