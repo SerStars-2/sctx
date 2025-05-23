@@ -28,10 +28,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-  # - name: Fail on Purpose
-  #   run: |
-  #     echo "Failing this job on purpose to test the failure notification"
-  #     exit 1
+    - name: Fail on Purpose
+      run: |
+        echo "Failing this job on purpose to test the failure notification"
+        exit 1
 
   # - name: Download SCTX-Converter
   #   run: |
