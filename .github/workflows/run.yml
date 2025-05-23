@@ -97,7 +97,7 @@ jobs:
         $headers = @{
           "Authorization" = "Bot $env:DISCORD_BOT_TOKEN"
           "Content-Type"  = "multipart/form-data"
-          "User-Agent"    = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+          "User-Agent"    = "DiscordBot (https://github.com/serstars-2/sctx, v1.0)"
         }
 
         $contentJson = @{
@@ -149,7 +149,7 @@ jobs:
         }
 
         $body = @{
-          content = "<@$env:USER_ID> ❌ Failed to convert **$env:FILENAME** to PNG."
+          content = "❌ Failed to convert **$env:basename** to PNG."
           message_reference = @{
             message_id = "$env:MESSAGE_ID"
             channel_id = "$env:CHANNEL_ID"
