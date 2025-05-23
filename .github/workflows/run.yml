@@ -101,7 +101,6 @@ jobs:
         }
 
         $contentJson = @{
-          content = "<@$env:USER_ID>"
           message_reference = @{
             message_id = "$env:MESSAGE_ID"
             channel_id = "$env:CHANNEL_ID"
