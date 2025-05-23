@@ -28,10 +28,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Fail on Purpose
-      run: |
-        echo "Failing this job on purpose to test the failure notification"
-        exit 1
+    # - name: Fail on Purpose
+    #   run: |
+    #     echo "Failing this job on purpose to test the failure notification"
+    #     exit 1
 
   # - name: Download SCTX-Converter
   #   run: |
@@ -140,7 +140,7 @@ jobs:
         CHANNEL_ID: ${{ github.event.inputs.discord-channel-id }}
         MESSAGE_ID: ${{ github.event.inputs.discord-message-id }}
         USER_ID: ${{ github.event.inputs.discord-user-id }}
-        FILENAME: ${{ steps.extract_filename.outputs.filename }}
+        FILENAME: ${{ steps.extract_filename.outputs.basename }}
       run: |
         $headers = @{
           "Authorization" = "Bot $env:DISCORD_BOT_TOKEN"
@@ -149,7 +149,7 @@ jobs:
         }
 
         $body = @{
-          content = "❌ Failed to convert **$env:basename** to PNG."
+          content = "❌ Failed to convert **$env:FILENAME** to PNG."
           message_reference = @{
             message_id = "$env:MESSAGE_ID"
             channel_id = "$env:CHANNEL_ID"
