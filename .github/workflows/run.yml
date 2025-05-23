@@ -28,6 +28,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+  # - name: Fail on Purpose
+  #   run: |
+  #     echo "Failing this job on purpose to test the failure notification"
+  #     exit 1
+
+  # - name: Download SCTX-Converter
+  #   run: |
+  #     curl -L -o SctxConverter.exe https://github.com/Daniil-SV/SCTX-Converter/releases/latest/download/SctxConverter.exe
+
     - name: Extract filename from URL (PowerShell)
       id: extract_filename
       run: |
@@ -68,66 +77,60 @@ jobs:
           exit 1
         }
 
-    - name: Post to Discord (reply with file)
+    # - name: Post to Discord
+    #   if: steps.verify_png.outputs.png_exists == 'true'
+    #   uses: tsickert/discord-webhook@v6.0.0
+    #   with:
+    #     webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+    #     filename: "${{ steps.extract_filename.outputs.basename }}.png"
+    #     content: "<@${{ github.event.inputs.discord-user-id }}>"
+
+    - name: Post to Discord
       if: steps.verify_png.outputs.png_exists == 'true'
       env:
         DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         CHANNEL_ID: ${{ github.event.inputs.discord-channel-id }}
         MESSAGE_ID: ${{ github.event.inputs.discord-message-id }}
         USER_ID: ${{ github.event.inputs.discord-user-id }}
-        FILE_PATH: "${{ steps.extract_filename.outputs.basename }}.png"
-      shell: pwsh
+        FILE: "${{ steps.extract_filename.outputs.basename }}.png"
       run: |
-        $boundary = [System.Guid]::NewGuid().ToString()
-        $LF = "`r`n"
-
-        # Prepare JSON payload for the message
-        $payload = @{
-          content = "<@$env:USER_ID> Here's your PNG!"
-          message_reference = @{
-            message_id = $env:MESSAGE_ID
-            channel_id = $env:CHANNEL_ID
-            fail_if_not_exists = $false
-          }
-          allowed_mentions = @{
-            parse = @("users")
-          }
-        } | ConvertTo-Json -Depth 5
-
-        # Build multipart body manually
-        $payloadPart = "--$boundary$LF" +
-                       "Content-Disposition: form-data; name=`"payload_json`"$LF$LF" +
-                       "$payload$LF"
-
-        $fileName = [System.IO.Path]::GetFileName($env:FILE_PATH)
-        $fileHeader = "--$boundary$LF" +
-                      "Content-Disposition: form-data; name=`"file`"; filename=`"$fileName`"$LF" +
-                      "Content-Type: image/png$LF$LF"
-
-        $fileContent = [System.IO.File]::ReadAllBytes($env:FILE_PATH)
-        $fileFooter = "$LF--$boundary--$LF"
-
-        # Convert string parts to bytes
-        $payloadBytes = [System.Text.Encoding]::UTF8.GetBytes($payloadPart + $fileHeader)
-        $footerBytes = [System.Text.Encoding]::UTF8.GetBytes($fileFooter)
-
-        # Combine all bytes
-        $bodyBytes = New-Object byte[] ($payloadBytes.Length + $fileContent.Length + $footerBytes.Length)
-        [Array]::Copy($payloadBytes, 0, $bodyBytes, 0, $payloadBytes.Length)
-        [Array]::Copy($fileContent, 0, $bodyBytes, $payloadBytes.Length, $fileContent.Length)
-        [Array]::Copy($footerBytes, 0, $bodyBytes, $payloadBytes.Length + $fileContent.Length, $footerBytes.Length)
-
-        # Headers
         $headers = @{
-          Authorization = "Bot $env:DISCORD_BOT_TOKEN"
-          "Content-Type" = "multipart/form-data; boundary=$boundary"
+          "Authorization" = "Bot $env:DISCORD_BOT_TOKEN"
+          "Content-Type"  = "multipart/form-data"
         }
 
-        # Send POST request to Discord API to reply with file
+        $contentJson = @{
+          content = "<@$env:USER_ID>"
+          message_reference = @{
+            message_id = "$env:MESSAGE_ID"
+            channel_id = "$env:CHANNEL_ID"
+            fail_if_not_exists = $false
+          }
+        } | ConvertTo-Json -Depth 3
+
+        $form = @{
+          "payload_json" = $contentJson
+          "file" = Get-Item -Path $env:FILE
+        }
+
         Invoke-RestMethod -Uri "https://discord.com/api/v10/channels/$env:CHANNEL_ID/messages" `
-                          -Method POST `
+                          -Method Post `
                           -Headers $headers `
-                          -Body $bodyBytes
+                          -Form $form
+      shell: pwsh
+
+    # - name: If Failed to Convert
+    #   if: failure()
+    #   uses: sarisia/actions-status-discord@v1.15.1
+    #   env:
+    #     DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+    #   with:
+    #     nodetail: true
+    #     nofail: false
+    #     title: |
+    #       Failed to convert ${{ steps.extract_filename.outputs.filename }}
+    #     content: |
+    #       <@${{ github.event.inputs.discord-user-id }}>
 
     - name: If Failed to Convert
       if: failure()
@@ -137,26 +140,23 @@ jobs:
         MESSAGE_ID: ${{ github.event.inputs.discord-message-id }}
         USER_ID: ${{ github.event.inputs.discord-user-id }}
         FILENAME: ${{ steps.extract_filename.outputs.filename }}
-      shell: pwsh
       run: |
         $headers = @{
-          Authorization = "Bot $env:DISCORD_BOT_TOKEN"
-          "Content-Type" = "application/json"
+          "Authorization" = "Bot $env:DISCORD_BOT_TOKEN"
+          "Content-Type"  = "application/json"
         }
 
         $body = @{
           content = "<@$env:USER_ID> ❌ Failed to convert **$env:FILENAME** to PNG."
           message_reference = @{
-            message_id = $env:MESSAGE_ID
-            channel_id = $env:CHANNEL_ID
+            message_id = "$env:MESSAGE_ID"
+            channel_id = "$env:CHANNEL_ID"
             fail_if_not_exists = $false
           }
-          allowed_mentions = @{
-            parse = @("users")
-          }
-        } | ConvertTo-Json -Depth 5
+        } | ConvertTo-Json -Depth 3
 
         Invoke-RestMethod -Uri "https://discord.com/api/v10/channels/$env:CHANNEL_ID/messages" `
-                          -Method POST `
+                          -Method Post `
                           -Headers $headers `
                           -Body $body
+      shell: pwsh
